@@ -5,3 +5,13 @@ eureka:
   client:
     service-url:
       defaultZone: http://eureka-0.eureka-service.default.svc.cluster.local:8761/eureka
+
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        query:
+          plan_cache_max_size: 2048
+#        dialect: org.hibernate.dialect.MySQLDialect
+#        format_sql: true

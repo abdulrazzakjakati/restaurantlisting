@@ -3,7 +3,6 @@ package com.codedecode.restuarantlisting.sevice;
 import com.codedecode.restuarantlisting.dto.RestaurantDTO;
 import com.codedecode.restuarantlisting.entity.Restaurant;
 import com.codedecode.restuarantlisting.repository.RestaurantRepository;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
