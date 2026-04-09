@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +45,7 @@ class RestaurantServiceTest {
         when(restaurantRepository.findAll()).thenReturn(restaurantList);
         List<RestaurantDTO> restaurantDTOS = restaurantService.getAllRestaurants();
 
+        assertNotNull(restaurantDTOS);
         assertEquals(restaurantList.size(), restaurantDTOS.size());
         for (int i=0; i<restaurantList.size(); i++) {
             assertEquals(restaurantList.get(i).getName(), restaurantDTOS.get(i).getName());
