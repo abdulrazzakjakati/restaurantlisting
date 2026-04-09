@@ -51,21 +51,26 @@ pipeline {
         stage('Check Code Coverage') {
             steps {
                 script {
-                    def response = sh(
-                        script: "curl -s -u ${SONAR_TOKEN}: '${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage'",
-                        returnStdout: true
-                    ).trim()
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        // Call SonarQube API securely
+                        def response = sh(
+                                script: """curl -s -u "$SONAR_TOKEN:" "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage" """,
+                                returnStdout: true
+                        ).trim()
 
-                    def coverageStr = sh(
-                            script: "echo '${response}' | jq -r '.component.measures[0].value // \"0\"' | tr -d '\\n'",
-                            returnStdout: true
-                    ).trim()
+                        echo "SonarQube API response: ${response}"
 
-                    echo "Coverage raw value: ${coverageStr}%"
-                    def coverage = coverageStr ? coverageStr.toDouble() : 0.0
+                        // Parse JSON in Groovy
+                        def json = new groovy.json.JsonSlurper().parseText(response)
+                        def coverageStr = json?.component?.measures?.getAt(0)?.value ?: "0"
 
-                    if (coverage < COVERAGE_THRESHOLD.toDouble()) {
-                        error "Coverage ${coverage}% < ${COVERAGE_THRESHOLD}% threshold. Fix tests!"
+                        echo "Coverage raw value: ${coverageStr}%"
+
+                        def coverage = coverageStr.toDouble()
+
+                        if (coverage < COVERAGE_THRESHOLD.toDouble()) {
+                            error "Coverage ${coverage}% < ${COVERAGE_THRESHOLD}% threshold. Fix tests!"
+                        }
                     }
                 }
             }
