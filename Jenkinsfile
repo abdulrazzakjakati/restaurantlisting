@@ -56,12 +56,13 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    def coverage = sh(
-                        script: "echo '${response}' | jq -r '.component.measures[0].value // 0' | tr -d '\\n'",
-                        returnStdout: true
-                    ).trim().toDouble()
+                    def coverageStr = sh(
+                            script: "echo '${response}' | jq -r '.component.measures[0].value // \"0\"' | tr -d '\\n'",
+                            returnStdout: true
+                    ).trim()
 
-                    echo "Coverage: ${coverage}%"
+                    echo "Coverage raw value: ${coverageStr}%"
+                    def coverage = coverageStr ? coverageStr.toDouble() : 0.0
 
                     if (coverage < COVERAGE_THRESHOLD.toDouble()) {
                         error "Coverage ${coverage}% < ${COVERAGE_THRESHOLD}% threshold. Fix tests!"
