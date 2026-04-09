@@ -10,7 +10,7 @@ pipeline {
 //        MANIFEST_PATH          = 'aws/restaurant-manifest.yml'
         MANIFEST_PATH          = 'helm/restaurant-service/values.yaml'
         SONAR_PROJECT_KEY      = 'com.codeddecode:restaurantlisting'
-        SONAR_URL              = 'http://140.245.14.252:9000/'
+        SONAR_URL              = 'http://140.245.14.252:9000'
         COVERAGE_THRESHOLD     = '50.0'
         // ─────────────────────────────────────────────────────────
 
