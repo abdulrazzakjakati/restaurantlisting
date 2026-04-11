@@ -39,11 +39,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh """
-                    mvn clean verify sonar:sonar \
-                    -Dsonar.host.url=${SONAR_URL} \
-                    -Dsonar.token=${SONAR_TOKEN} \
-                    -Dsonar.projectKey=${SONAR_PROJECT_KEY}
+                sh """ 
+                    mvn clean verify sonar:sonar \\
+                    -Dsonar.host.url=${SONAR_URL} \\
+                    -Dsonar.token=${SONAR_TOKEN} \\
+                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
+                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                 """
             }
         }
