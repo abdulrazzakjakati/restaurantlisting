@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_USERNAME     = 'abdulrazzakjakati'
         APP_NAME               = 'food-delivery-restaurant-service'
-        GITOPS_REPO_URL        = 'git@github.com:abdulrazzakjakati/deployment-folder.git'
+        GITOPS_REPO_URL        = 'git@github.com:abdulrazzakjakati/deployment.git'
         GITOPS_BRANCH          = 'master'
         MANIFEST_PATH          = 'helm/restaurant-service/values.yaml'
         SONAR_PROJECT_KEY      = 'com.codeddecode:restaurantlisting'
