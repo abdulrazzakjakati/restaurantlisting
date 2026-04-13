@@ -111,12 +111,14 @@ pipeline {
                 )
                 script {
                     sh """
-                        sed -i "s|image:.*|image: ${DOCKER_IMAGE}:${VERSION}|" ${MANIFEST_PATH}
-                    """
-                    sh 'git add .'
-                    sh "git commit -m 'Update ${APP_NAME} to v${VERSION}' || true"
+                sed -i "s|image:.*|image: ${DOCKER_IMAGE}:${VERSION}|" ${MANIFEST_PATH}
+                git config user.name "Jenkins"
+                git config user.email "jenkins@local"
+                git add ${MANIFEST_PATH}
+                git commit -m "Update ${APP_NAME} to v${VERSION}"
+            """
                     sshagent(['git-ssh']) {
-                        sh "git push origin ${GITOPS_BRANCH}"
+                        sh "git push origin HEAD:${GITOPS_BRANCH}"
                     }
                 }
             }
