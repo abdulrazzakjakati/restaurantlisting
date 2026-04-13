@@ -88,7 +88,10 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh '''
+                    echo "$DOCKERHUB_CREDENTIALS_PSW" | \
+                    docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+                '''
                 sh "docker build -t ${DOCKER_IMAGE}:${VERSION} ."
                 sh "docker push ${DOCKER_IMAGE}:${VERSION}"
             }
