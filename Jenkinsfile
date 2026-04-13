@@ -1,8 +1,7 @@
 pipeline {
-    agent any  // ✅ Host Docker socket works!
+    agent any  // ✅ Docker socket mounted
 
     environment {
-        // ─── Dynamic Configuration ───────────────────────────────
         DOCKERHUB_USERNAME     = 'abdulrazzakjakati'
         APP_NAME               = 'food-delivery-restaurant-service'
         GITOPS_REPO_URL        = 'git@github.com:abdulrazzakjakati/deployment-folder.git'
@@ -11,7 +10,6 @@ pipeline {
         SONAR_PROJECT_KEY      = 'com.codeddecode:restaurantlisting'
         SONAR_URL              = 'http://140.245.14.252:9000'
         COVERAGE_THRESHOLD     = '50.0'
-        // ─────────────────────────────────────────────────────────
 
         DOCKERHUB_CREDENTIALS  = credentials('DOCKER_HUB_CREDENTIAL')
         SONAR_TOKEN            = credentials('sonar-token')
@@ -20,7 +18,7 @@ pipeline {
     }
 
     tools {
-        maven 'Maven'  // ✅ Requires Maven tool configured
+        maven 'Maven'
     }
 
     stages {
@@ -32,19 +30,19 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'mvn test'  // ✅ Generates JaCoCo for Sonar
+                sh 'mvn test'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                // 🔧 FIX 1: Use withCredentials to avoid interpolation warning
+                // 🔧 FIXED: HARDCODE URL + PROPER QUOTES
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         mvn clean verify sonar:sonar \
-                        -Dsonar.host.url='${SONAR_URL}' \
+                        -Dsonar.host.url="http://140.245.14.252:9000" \
                         -Dsonar.token="$SONAR_TOKEN" \
-                        -Dsonar.projectKey='${SONAR_PROJECT_KEY}' \
+                        -Dsonar.projectKey="com.codeddecode:restaurantlisting" \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                     '''
                 }
@@ -54,7 +52,6 @@ pipeline {
         stage('Check Code Coverage') {
             steps {
                 script {
-                    // ✅ Your logic is PERFECT - handles empty measures
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         def apiUrl = "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage"
 
@@ -91,7 +88,6 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                // ✅ Docker socket works here!
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                 sh "docker build -t ${DOCKER_IMAGE}:${VERSION} ."
                 sh "docker push ${DOCKER_IMAGE}:${VERSION}"
