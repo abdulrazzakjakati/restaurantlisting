@@ -55,31 +55,31 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         def apiUrl = "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage"
 
-                        def response = sh(
-                                script: '''
-                        set +x
-                        curl -s -u "$SONAR_TOKEN:" "$API_URL"
-                    ''',
-                                returnStdout: true,
-                                environment: [API_URL: apiUrl]
-                        ).trim()
+                        withEnv(["API_URL=${apiUrl}"]) {
+                            def response = sh(
+                                    script: '''
+                            set +x
+                            test -n "$API_URL"
+                            curl -s -u "$SONAR_TOKEN:" "$API_URL"
+                        ''',
+                                    returnStdout: true
+                            ).trim()
 
-                        echo "SonarQube API response: ${response}"
+                            echo "SonarQube API response: ${response}"
 
-                        def json = new groovy.json.JsonSlurper().parseText(response)
-                        def measures = json?.component?.measures
+                            def json = new groovy.json.JsonSlurper().parseText(response)
+                            def measures = json?.component?.measures
 
-                        if (!measures || measures.isEmpty()) {
-                            error "Coverage metric not returned by SonarQube. Check JaCoCo/test coverage report configuration."
-                        }
+                            if (!measures || measures.isEmpty()) {
+                                error "Coverage metric not returned by SonarQube. Check JaCoCo/test coverage report configuration."
+                            }
 
-                        def coverageStr = measures[0]?.value ?: "0"
-                        echo "Coverage raw value: ${coverageStr}%"
+                            def coverage = measures[0].value.toDouble()
+                            echo "Coverage raw value: ${coverage}%"
 
-                        def coverage = coverageStr.toDouble()
-
-                        if (coverage < COVERAGE_THRESHOLD.toDouble()) {
-                            error "Coverage ${coverage}% < ${COVERAGE_THRESHOLD}% threshold. Fix tests!"
+                            if (coverage < COVERAGE_THRESHOLD.toDouble()) {
+                                error "Coverage ${coverage}% < ${COVERAGE_THRESHOLD}% threshold. Fix tests!"
+                            }
                         }
                     }
                 }
