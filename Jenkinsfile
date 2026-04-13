@@ -53,18 +53,27 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        // Call SonarQube API securely
+                        def apiUrl = "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage"
+
                         def response = sh(
-                                script: """curl -s -u "$SONAR_TOKEN:" "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage" """,
-                                returnStdout: true
+                                script: '''
+                        set +x
+                        curl -s -u "$SONAR_TOKEN:" "$API_URL"
+                    ''',
+                                returnStdout: true,
+                                environment: [API_URL: apiUrl]
                         ).trim()
 
                         echo "SonarQube API response: ${response}"
 
-                        // Parse JSON in Groovy
                         def json = new groovy.json.JsonSlurper().parseText(response)
-                        def coverageStr = json?.component?.measures?.getAt(0)?.value ?: "0"
+                        def measures = json?.component?.measures
 
+                        if (!measures || measures.isEmpty()) {
+                            error "Coverage metric not returned by SonarQube. Check JaCoCo/test coverage report configuration."
+                        }
+
+                        def coverageStr = measures[0]?.value ?: "0"
                         echo "Coverage raw value: ${coverageStr}%"
 
                         def coverage = coverageStr.toDouble()
