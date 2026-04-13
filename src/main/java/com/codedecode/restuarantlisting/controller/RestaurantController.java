@@ -34,4 +34,5 @@ public class RestaurantController {
     public ResponseEntity<RestaurantDTO> findRestaurantById(@PathVariable Long id) {
         return new ResponseEntity<>(restaurantService.findRestaurantById(id), HttpStatus.OK);
     }
+
 }
