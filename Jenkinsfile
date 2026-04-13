@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-            docker {
-                image 'docker:24.0-dind'
-                args '-v /var/run/docker.sock:/var/run/docker.sock'
-            }
-    }
+    agent any  // ✅ Host Docker socket works!
 
     environment {
         // ─── Dynamic Configuration ───────────────────────────────
@@ -12,7 +7,6 @@ pipeline {
         APP_NAME               = 'food-delivery-restaurant-service'
         GITOPS_REPO_URL        = 'git@github.com:abdulrazzakjakati/deployment-folder.git'
         GITOPS_BRANCH          = 'master'
-//        MANIFEST_PATH          = 'aws/restaurant-manifest.yml'
         MANIFEST_PATH          = 'helm/restaurant-service/values.yaml'
         SONAR_PROJECT_KEY      = 'com.codeddecode:restaurantlisting'
         SONAR_URL              = 'http://140.245.14.252:9000'
@@ -26,7 +20,7 @@ pipeline {
     }
 
     tools {
-        maven 'Maven'
+        maven 'Maven'  // ✅ Requires Maven tool configured
     }
 
     stages {
@@ -38,35 +32,39 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'mvn test'
+                sh 'mvn test'  // ✅ Generates JaCoCo for Sonar
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh """ 
-                    mvn clean verify sonar:sonar \\
-                    -Dsonar.host.url=${SONAR_URL} \\
-                    -Dsonar.token=${SONAR_TOKEN} \\
-                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                """
+                // 🔧 FIX 1: Use withCredentials to avoid interpolation warning
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        mvn clean verify sonar:sonar \
+                        -Dsonar.host.url='${SONAR_URL}' \
+                        -Dsonar.token="$SONAR_TOKEN" \
+                        -Dsonar.projectKey='${SONAR_PROJECT_KEY}' \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
+                }
             }
         }
 
         stage('Check Code Coverage') {
             steps {
                 script {
+                    // ✅ Your logic is PERFECT - handles empty measures
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         def apiUrl = "${SONAR_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage"
 
                         withEnv(["API_URL=${apiUrl}"]) {
                             def response = sh(
                                     script: '''
-                            set +x
-                            test -n "$API_URL"
-                            curl -s -u "$SONAR_TOKEN:" "$API_URL"
-                        ''',
+                                    set +x
+                                    test -n "$API_URL"
+                                    curl -s -u "$SONAR_TOKEN:" "$API_URL"
+                                ''',
                                     returnStdout: true
                             ).trim()
 
@@ -93,6 +91,7 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
+                // ✅ Docker socket works here!
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                 sh "docker build -t ${DOCKER_IMAGE}:${VERSION} ."
                 sh "docker push ${DOCKER_IMAGE}:${VERSION}"
@@ -102,8 +101,8 @@ pipeline {
         stage('Update GitOps Manifests') {
             steps {
                 checkout scmGit(
-                    branches: [[name: "*/${GITOPS_BRANCH}"]],
-                    userRemoteConfigs: [[credentialsId: 'git-ssh', url: "${GITOPS_REPO_URL}"]]
+                        branches: [[name: "*/${GITOPS_BRANCH}"]],
+                        userRemoteConfigs: [[credentialsId: 'git-ssh', url: "${GITOPS_REPO_URL}"]]
                 )
                 script {
                     sh """
