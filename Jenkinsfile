@@ -86,14 +86,20 @@ pipeline {
             }
         }
 
+
+
         stage('Docker Build & Push') {
             steps {
                 sh '''
-                    echo "$DOCKERHUB_CREDENTIALS_PSW" | \
-                    docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
-                '''
-                sh "docker build -t ${DOCKER_IMAGE}:${VERSION} ."
-                sh "docker push ${DOCKER_IMAGE}:${VERSION}"
+            echo "Workspace contents:"
+            ls -la
+            
+            echo "Dockerfile exists:"
+            test -f Dockerfile && echo "✓ Found" || echo "✗ Missing!"
+            
+            docker build -t abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER} .
+            docker push abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER}
+        '''
             }
         }
 
