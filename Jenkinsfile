@@ -2,19 +2,20 @@ pipeline {
     agent any  // ✅ Docker socket mounted
 
     environment {
-        DOCKERHUB_USERNAME     = 'abdulrazzakjakati'
-        APP_NAME               = 'food-delivery-restaurant-service'
-        GITOPS_REPO_URL        = 'git@github.com:abdulrazzakjakati/deployment.git'
-        GITOPS_BRANCH          = 'master'
-        MANIFEST_PATH           = "helm/restaurant-microservices-project/restaurant-service/values.yaml"
-        SONAR_PROJECT_KEY      = 'com.codeddecode:restaurantlisting'
-        SONAR_URL              = 'http://140.245.14.252:9000'
-        COVERAGE_THRESHOLD     = '50.0'
+        DOCKERHUB_USERNAME    = 'abdulrazzakjakati'
+        APP_NAME              = 'food-delivery-restaurant-service'
+        GITOPS_REPO_URL       = 'git@github.com:abdulrazzakjakati/deployment.git'
+        GITOPS_BRANCH         = 'master'
+        MANIFEST_PATH         = "helm/restaurant-microservices-project/restaurant-service/values.yaml"
+        SONAR_PROJECT_KEY     = 'com.codeddecode:restaurantlisting'
+        SONAR_URL             = 'http://140.245.14.252:9000'
+        COVERAGE_THRESHOLD    = '50.0'
+        PLATFORMS             = 'linux/amd64,linux/arm64'
 
-        DOCKERHUB_CREDENTIALS  = credentials('DOCKER_HUB_CREDENTIAL')
-        SONAR_TOKEN            = credentials('sonar-token')
-        VERSION                = "${env.BUILD_ID}"
-        DOCKER_IMAGE = "${DOCKERHUB_USERNAME}/${APP_NAME}:${VERSION}"
+        DOCKERHUB_CREDENTIALS = credentials('DOCKER_HUB_CREDENTIAL')
+        SONAR_TOKEN           = credentials('sonar-token')
+        VERSION               = "${env.BUILD_ID}"
+        DOCKER_IMAGE          = "${DOCKERHUB_USERNAME}/${APP_NAME}:${VERSION}"
     }
 
     tools {
@@ -22,12 +23,6 @@ pipeline {
     }
 
     stages {
-        stage('Maven Build') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
@@ -36,13 +31,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // 🔧 FIXED: HARDCODE URL + PROPER QUOTES
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         mvn clean verify sonar:sonar \
-                        -Dsonar.host.url="http://140.245.14.252:9000" \
+                        -Dsonar.host.url="${SONAR_URL}" \
                         -Dsonar.token="$SONAR_TOKEN" \
-                        -Dsonar.projectKey="com.codeddecode:restaurantlisting" \
+                        -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                     '''
                 }
@@ -91,10 +85,10 @@ pipeline {
                 sh '''
             echo "Workspace contents:"
             ls -la
-            
+
             echo "Dockerfile exists:"
             test -f Dockerfile && echo "✓ Found" || echo "✗ Missing!"
-            
+
             docker build -t abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER} .
             docker push abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER}
         '''
@@ -109,12 +103,14 @@ pipeline {
                 )
                 script {
                     sh """
-                sed -i "s|image:.*|image: ${DOCKER_IMAGE}:${VERSION}|" ${MANIFEST_PATH}
-                git config user.name "Jenkins"
-                git config user.email "jenkins@local"
-                git add ${MANIFEST_PATH}
-                git commit -m "Update ${APP_NAME} to v${VERSION}"
-            """
+                        # ✅ Best Practice: Target the 'tag' specifically
+                        sed -i "s|tag:.*|tag: \\"${VERSION}\\"|" ${MANIFEST_PATH}
+                        
+                        git config user.name "Jenkins"
+                        git config user.email "jenkins@local"
+                        git add ${MANIFEST_PATH}
+                        git commit -m "Update ${APP_NAME} to v${VERSION}"
+                    """
                     sshagent(['git-ssh']) {
                         sh "git push origin HEAD:${GITOPS_BRANCH}"
                     }
