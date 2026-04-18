@@ -22,7 +22,7 @@ COPY --from=builder /build/target/*.jar app.jar
 RUN chown appuser:appgroup /app/app.jar
 
 USER appuser
-EXPOSE 8761
+EXPOSE 9091
 
 # Healthcheck (Note: Alpine needs 'wget' or 'curl' installed to work)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
