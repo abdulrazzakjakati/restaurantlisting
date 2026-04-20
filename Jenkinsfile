@@ -126,6 +126,11 @@ pipeline {
 
     post {
         always {
+            sh '''
+            docker container prune -f
+            docker image prune -a -f --filter "until=48h"
+            docker builder prune -f --filter "until=24h"
+        '''
             cleanWs()
         }
     }
