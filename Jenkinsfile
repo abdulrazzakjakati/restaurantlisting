@@ -10,7 +10,6 @@ pipeline {
         SONAR_PROJECT_KEY     = 'com.codeddecode:restaurantlisting'
         SONAR_URL             = 'http://140.245.14.252:9000'
         COVERAGE_THRESHOLD    = '50.0'
-        PLATFORMS             = 'linux/amd64,linux/arm64'
 
         DOCKERHUB_CREDENTIALS = credentials('DOCKER_HUB_CREDENTIAL')
         SONAR_TOKEN           = credentials('sonar-token')
@@ -89,8 +88,8 @@ pipeline {
             echo "Dockerfile exists:"
             test -f Dockerfile && echo "✓ Found" || echo "✗ Missing!"
 
-            docker build -t abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER} .
-            docker push abdulrazzakjakati/food-delivery-restaurant-service:${BUILD_NUMBER}
+            docker build -t ${DOCKER_IMAGE} .
+            docker push ${DOCKER_IMAGE}
         '''
             }
         }
